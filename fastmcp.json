@@ -1,0 +1,13 @@
+{
+  "name": "barbercontrol",
+  "version": "1.0.0",
+  "description": "MCP server for BarberControl voice assistant integration",
+  "main": "barbercontrol.py",
+  "runtime": "python",
+  "python_version": "3.11",
+  "env": [
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY"
+  ],
+  "region": "us-east-1"
+}
