@@ -250,7 +250,7 @@ appointments
 ├── client_email (TEXT, optional)
 ├── date (DATE)
 ├── time_slot (TEXT)
-├── status (TEXT)  -- pending, confirmed, cancelled, completed, no_show
+├── status (TEXT)  -- booked, confirmed, cancelled, completed, no_show
 ├── notes (TEXT, optional)
 ├── created_by (TEXT)  -- virtual_assistant, barber, client
 ├── created_at (TIMESTAMPTZ)

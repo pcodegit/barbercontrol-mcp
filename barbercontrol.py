@@ -97,7 +97,7 @@ def check_barber_availability(barber_id: str, date: str) -> str:
             .select("time_slot")\
             .eq("barber_id", barber_id)\
             .eq("date", date)\
-            .in_("status", ["pending", "confirmed"])\
+            .in_("status", ["booked", "confirmed"])\
             .execute()
 
         # Build appointment counts
@@ -182,7 +182,7 @@ def get_available_slots(barber_id: str, start_date: str, end_date: str) -> str:
             .eq("barber_id", barber_id)\
             .gte("date", start_date)\
             .lte("date", end_date)\
-            .in_("status", ["pending", "confirmed"])\
+            .in_("status", ["booked", "confirmed"])\
             .execute()
 
         # Count appointments per date+time
@@ -279,7 +279,7 @@ def book_appointment(
             .eq("barber_id", barber_id)\
             .eq("date", date)\
             .eq("time_slot", time_slot)\
-            .in_("status", ["pending", "confirmed"])\
+            .in_("status", ["booked", "confirmed"])\
             .execute()
 
         if appt_count.count >= 2:
@@ -292,7 +292,7 @@ def book_appointment(
             "client_phone": client_phone,
             "date": date,
             "time_slot": time_slot,
-            "status": "pending",
+            "status": "booked",
             "created_by": "virtual_assistant"
         }
 
