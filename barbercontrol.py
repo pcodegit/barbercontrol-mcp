@@ -329,7 +329,7 @@ async def book_appointment(
             "client_phone": client_phone,
             "date": date,
             "time_slot": time_slot,
-            "status": "pending",
+            "status": "confirmed",
             "created_by": "virtual_assistant"
         }
 
