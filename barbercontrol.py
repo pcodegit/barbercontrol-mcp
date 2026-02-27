@@ -7,6 +7,7 @@ Enables external voice agents to check availability and book appointments.
 import os
 from datetime import datetime, timedelta
 from typing import Optional
+import httpx
 from fastmcp import FastMCP
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -25,6 +26,42 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
     raise ValueError("Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
+
+
+async def send_expo_push_notification(
+    tokens: list[str], title: str, body: str, data: dict | None = None
+) -> int:
+    """Send push notifications via Expo's push API. Returns count of successful sends."""
+    if not tokens:
+        return 0
+
+    messages = [
+        {
+            "to": token,
+            "sound": "default",
+            "title": title,
+            "body": body,
+            **({"data": data} if data else {}),
+        }
+        for token in tokens
+    ]
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            EXPO_PUSH_URL,
+            json=messages,
+            headers={"Content-Type": "application/json"},
+        )
+        response.raise_for_status()
+        result = response.json()
+
+    sent = 0
+    for ticket in result.get("data", []):
+        if ticket.get("status") == "ok":
+            sent += 1
+    return sent
 
 
 @mcp.tool()
@@ -226,7 +263,7 @@ def get_available_slots(barber_id: str, start_date: str, end_date: str) -> str:
 
 
 @mcp.tool()
-def book_appointment(
+async def book_appointment(
     barber_id: str,
     client_name: str,
     client_phone: str,
@@ -312,17 +349,22 @@ def book_appointment(
 
         # Send push notification to barber
         try:
-            # Get push subscriptions for barber
             subs_response = supabase.table("push_subscriptions")\
-                .select("*")\
+                .select("endpoint")\
                 .eq("user_id", barber_id)\
+                .eq("p256dh_key", "expo-push")\
                 .execute()
 
-            # Note: Push notification sending would require web-push library
-            # For now, just log that notification would be sent
             notification_status = ""
             if subs_response.data:
-                notification_status = f"\nPush notification sent to barber ({len(subs_response.data)} device(s))."
+                tokens = [sub["endpoint"] for sub in subs_response.data]
+                sent = await send_expo_push_notification(
+                    tokens=tokens,
+                    title="Nueva Cita Reservada",
+                    body=f"{client_name} — {date} a las {time_slot}",
+                    data={"appointmentId": appointment["id"]},
+                )
+                notification_status = f"\nPush notification sent to barber ({sent}/{len(tokens)} device(s))."
             else:
                 notification_status = "\nNo push subscriptions found for barber."
 
